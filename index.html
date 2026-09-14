@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>⚡ Data Consumption Tracker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f6f9fc 0%, #e9f0f5 100%);
+            min-height: 100vh;
+            padding: 1rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+            padding: 1.25rem 1rem 1.75rem;
+            position: relative;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.25rem;
+            position: relative;
+            z-index: 500;
+        }
+
+        .menu-btn {
+            background: #1e4b5e;
+            border: none;
+            color: white;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 8px 14px -8px rgba(0, 30, 40, 0.5);
+            flex-shrink: 0;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .menu-btn:active { transform: scale(0.94); }
+
+        .menu-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+            transition: transform 0.25s ease;
+            pointer-events: none;
+        }
+
+        .menu-btn.open svg { transform: rotate(90deg); }
+
+        h1 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 1.6rem;
+            letter-spacing: -0.02em;
+            color: #0b2b3e;
+            flex-wrap: wrap;
+            margin: 0;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 0.4rem);
+            left: 0;
+            background: #ffffff;
+            border-radius: 1.2rem;
+            box-shadow: 0 18px 30px -12px rgba(0, 20, 30, 0.35), 0 0 0 1px rgba(0, 40, 60, 0.08);
+            padding: 0.5rem;
+            min-width: 230px;
+            z-index: 600;
+            display: none;
+        }
+
+        .dropdown-menu.open { display: block; }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 0.9rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e4b5e;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .dropdown-item:hover { background: #eaf3f9; color: #0b3b4c; }
+        .dropdown-item:active { background: #d9e8f0; }
+
+        .dropdown-item.active {
+            background: #d9e8f0;
+            color: #0b3b4c;
+            box-shadow: inset 0 0 0 1px #b8d2e0;
+        }
+
+        .dropdown-item .drop-icon {
+            font-size: 1.15rem;
+            line-height: 1;
+            width: 1.5rem;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .dropdown-item .drop-check {
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: #1d7e9c;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .dropdown-item.active .drop-check { opacity: 1; }
+
+        .subhead {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            color: #3e5e6f;
+            border-bottom: 1px solid rgba(0, 40, 60, 0.1);
+            padding-bottom: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .subhead > div:first-child { font-size: 0.9rem; }
+
+        .date-badge {
+            background: #1e4b5e;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 6px 12px -6px rgba(0, 30, 40, 0.3);
+            white-space: nowrap;
+        }
+
+        .date-badge span {
+            background: #62b5d6;
+            border-radius: 30px;
+            padding: 0.15rem 0.6rem;
+            font-weight: 600;
+            color: #03222e;
+            font-size: 0.8rem;
+        }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* ---- FORM PANEL ---- */
+        .form-panel {
+            width: 100%;
+            background: #ffffffdd;
+            border-radius: 1.5rem;
+            padding: 1.5rem 1.25rem 1.75rem;
+            box-shadow: 0 10px 20px -8px rgba(0, 20, 30, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.7);
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .form-panel h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #123d4f;
+            margin-top: 0;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #2a5568;
+            opacity: 0.8;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            border: 1.5px solid #cbdae3;
+            border-radius: 1rem;
+            background: white;
+            outline: none;
+            transition: 0.2s;
+            font-weight: 500;
+            color: #0f2d3b;
+            font-family: inherit;
+        }
+
+        .input-group input:focus {
+            border-color: #1d7e9c;
+            box-shadow: 0 0 0 4px rgba(29, 126, 156, 0.15);
+        }
+
+        .input-group input[readonly] {
+            background: #eef4f8;
+            border-color: #b8cfdb;
+            color: #265a70;
+            font-weight: 600;
+            cursor: default;
+        }
+
+        .row-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .row-inputs .input-group { flex: 1 1 100%; }
+
+        .btn-primary {
+            width: 100%;
+            background: #0b3b4c;
+            border: none;
+            padding: 1rem;
+            border-radius: 1.2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 12px 18px -10px #0b3b4c66;
+            margin-top: 0.5rem;
+            border: 1px solid #ffffff30;
+            font-family: inherit;
+            touch-action: manipulation;
+        }
+
+        .btn-primary:active { transform: scale(0.98); }
+
+        .price-hint {
+            font-size: 0.75rem;
+            color: #44778e;
+            margin-top: -0.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+
+        /* ---- TABLE PANEL ---- */
+        .table-panel {
+            width: 100%;
+            background: #ffffffcc;
+            border-radius: 1.5rem;
+            padding: 0.9rem 0.9rem 1rem;
+            box-shadow: 0 10px 20px -8px rgba(0, 20, 30, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.7);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.25rem 0.6rem 0.25rem;
+            border-bottom: 1px solid rgba(0, 30, 40, 0.1);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .table-header h3 {
+            margin: 0;
+            font-weight: 600;
+            color: #123d4f;
+            font-size: 1.1rem;
+        }
+
+        .badge-count {
+            background: #e1eef5;
+            border-radius: 40px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #164e63;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            border-radius: 1rem;
+            margin-top: 0.5rem;
+            max-height: 420px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 0 1px #ffffff70;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 520px;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.7rem 0.6rem;
+            background: #d9e8f0;
+            color: #0b3b4c;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.7rem 0.6rem;
+            border-bottom: 1px solid #d4e2ea;
+            color: #153e4f;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .empty-row td {
+            text-align: center;
+            color: #698a9b;
+            font-style: italic;
+            padding: 2rem 0.5rem;
+            font-weight: 400;
+        }
+
+        .date-group { background: #eaf3f9; color: #0b3b4c; }
+        .date-group td { font-weight: 600; border-bottom: 2px solid #b8d2e0; }
+
+        .footer-note {
+            margin-top: 0.75rem;
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.2rem;
+        }
+
+        .clear-btn {
+            background: transparent;
+            border: 1px solid #b2ccda;
+            color: #1e5569;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        /* ---- CHART PANEL ---- */
+        .chart-panel {
+            background: #ffffffcc;
+            border-radius: 1.5rem;
+            padding: 1.2rem 1rem 1rem;
+            box-shadow: 0 10px 20px -8px rgba(0, 20, 30, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.7);
+        }
+
+        .chart-panel + .chart-panel {
+            margin-top: 1.25rem;
+        }
+
+        .chart-panel h3 {
+            margin: 0 0 0.75rem 0;
+            font-weight: 600;
+            color: #123d4f;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 240px;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chart-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #698a9b;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        .bar-rect { fill: #1d7e9c; transition: fill 0.15s; }
+        .bar-rect:hover { fill: #123d4f; }
+        .bar-value { fill: #123d4f; font-size: 10px; font-weight: 600; text-anchor: middle; }
+        .bar-label { fill: #4f6f80; font-size: 9px; text-anchor: middle; }
+
+        /* price chart uses a warmer colour */
+        .bar-rect-price { fill: #e08a3c; transition: fill 0.15s; }
+        .bar-rect-price:hover { fill: #b56a24; }
+        .bar-value-price { fill: #7a4512; font-size: 10px; font-weight: 600; text-anchor: middle; }
+        .bar-label-price { fill: #4f6f80; font-size: 9px; text-anchor: middle; }
+
+        /* ---- TOAST ---- */
+        .toast-msg {
+            background: #1e4b5e;
+            color: white;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .toast-msg.show { opacity: 1; }
+
+        @media (min-width: 640px) {
+            body { padding: 2rem 1.5rem; }
+            .container { border-radius: 2.5rem; padding: 2rem 1.8rem 2.5rem; }
+            h1 { font-size: 2rem; }
+            .menu-btn { width: 46px; height: 46px; border-radius: 15px; }
+            .menu-btn svg { width: 24px; height: 24px; }
+            .subhead > div:first-child { font-size: 1rem; }
+            .form-panel { border-radius: 2rem; padding: 1.8rem 2rem 2.2rem; }
+            .table-panel { border-radius: 2rem; padding: 1.2rem 1.2rem 0.8rem; }
+            .row-inputs { flex-direction: row; flex-wrap: wrap; }
+            .row-inputs .input-group { flex: 1 1 120px; }
+            .table-scroll { max-height: 520px; }
+            table { font-size: 0.9rem; min-width: 600px; }
+            th { padding: 0.9rem 1rem; font-size: 0.8rem; }
+            td { padding: 0.85rem 1rem; }
+            .chart-panel { border-radius: 2rem; padding: 1.5rem 1.8rem 1.2rem; }
+            .chart-wrap { height: 300px; }
+            .bar-value, .bar-value-price { font-size: 12px; }
+            .bar-label, .bar-label-price { font-size: 11px; }
+        }
+
+        @media (max-width: 480px) {
+            input, button, .clear-btn { font-size: 16px !important; }
+            .input-group input { padding: 0.75rem 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-row">
+        <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">
+            <svg viewBox="0 0 24 24">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+        </button>
+        <h1><span>⚡</span> Data Consumption</h1>
+
+        <div class="dropdown-menu" id="dropdownMenu">
+            <button class="dropdown-item active" type="button" data-tab="reading">
+                <span class="drop-icon">➕</span> New reading
+                <span class="drop-check">✓</span>
+            </button>
+            <button class="dropdown-item" type="button" data-tab="log">
+                <span class="drop-icon">📋</span> Consumption log
+                <span class="drop-check">✓</span>
+            </button>
+            <button class="dropdown-item" type="button" data-tab="chart">
+                <span class="drop-icon">📊</span> Graph
+                <span class="drop-check">✓</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="subhead">
+        <div style="font-weight: 500;">Track your electricity usage</div>
+        <div class="date-badge">📅 Today <span id="todayDisplay"></span></div>
+    </div>
+
+    <!-- TAB: NEW READING -->
+    <div class="tab-pane active" id="paneReading">
+        <div class="form-panel">
+            <h2>➕ New reading</h2>
+            <div class="input-group">
+                <label>Date (DD/MM/YYYY)</label>
+                <input type="text" id="inputDate" placeholder="DD/MM/YYYY" maxlength="10" inputmode="numeric">
+            </div>
+            <div class="row-inputs">
+                <div class="input-group">
+                    <label>Time (24h)</label>
+                    <input type="text" id="inputTime" placeholder="e.g. 1430" maxlength="4" inputmode="numeric">
+                </div>
+                <div class="input-group">
+                    <label>Consumption (kWh)</label>
+                    <input type="number" id="inputKwh" step="0.01" min="0.01" placeholder="1.93">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Price (RM) — auto</label>
+                <input type="text" id="inputPrice" readonly placeholder="0.00">
+            </div>
+            <div class="price-hint">
+                <span>⚡ Rate fixed: 0.4443 RM/kWh</span>
+                <span id="calcPreview">0.00 RM</span>
+            </div>
+            <button type="button" id="addEntryBtn" class="btn-primary"><span>📋</span> Add entry</button>
+            <div style="font-size:0.7rem; color:#5e7e8e; margin-top:1rem; text-align:center; border-top:1px dashed #b8cfdb; padding-top:0.8rem;">
+                ⚡ Price is calculated from consumption × 0.4443
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: CONSUMPTION LOG -->
+    <div class="tab-pane" id="paneLog">
+        <div class="table-panel">
+            <div class="table-header">
+                <h3>📋 Consumption log</h3>
+                <div class="badge-count" id="entryCount">0 entries</div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Time</th><th>Rate</th><th>Consumption (kWh)</th><th>Price (RM)</th><th>Total price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div class="footer-note">
+                <button class="clear-btn" id="clearAllBtn" type="button">Clear all entries</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: GRAPH (now with two charts) -->
+    <div class="tab-pane" id="paneChart">
+        <div class="chart-panel">
+            <h3>📊 Total consumption by day (kWh)</h3>
+            <div class="chart-wrap" id="chartWrap"></div>
+        </div>
+        <div class="chart-panel">
+            <h3>💰 Total price by day (RM)</h3>
+            <div class="chart-wrap" id="chartWrapPrice"></div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast-msg">✅ Entry added</div>
+
+<script>
+    (function() {
+        // ---------- constants ----------
+        const FIXED_RATE = 0.4443;
+        const SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzB37aWHDETlcmXBJiODF7s9ef1aW2xlz2C_hClJLMCqXRoaH_ILwAhTZ46VvOs6e-1/exec';
+
+        // ---------- state ----------
+        let entries = [];
+
+        // ---------- DOM refs ----------
+        const addEntryBtn = document.getElementById('addEntryBtn');
+        const inputDate = document.getElementById('inputDate');
+        const inputTime = document.getElementById('inputTime');
+        const inputKwh = document.getElementById('inputKwh');
+        const inputPrice = document.getElementById('inputPrice');
+        const calcPreview = document.getElementById('calcPreview');
+        const tableBody = document.getElementById('tableBody');
+        const entryCountSpan = document.getElementById('entryCount');
+        const todayDisplay = document.getElementById('todayDisplay');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const toast = document.getElementById('toast');
+
+        const menuBtn = document.getElementById('menuBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
+
+        const paneReading = document.getElementById('paneReading');
+        const paneLog = document.getElementById('paneLog');
+        const paneChart = document.getElementById('paneChart');
+
+        // ---------- helpers ----------
+        function getTodayISO() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDisplayDate(isoDate) {
+            if (!isoDate) return '';
+            const [y, m, d] = isoDate.split('-');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthIdx = parseInt(m, 10) - 1;
+            return `${parseInt(d,10)} ${monthNames[monthIdx]} ${y}`;
+        }
+
+        // converts internal ISO date (yyyy-mm-dd) to the DD/MM/YYYY text shown in the input
+        function isoToDisplayInput(isoDate) {
+            if (!isoDate) return '';
+            const [y, m, d] = isoDate.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        // converts the typed DD/MM/YYYY text back to ISO (yyyy-mm-dd) for internal use/sorting/sheet sync
+        // returns null if the text isn't a valid date in that format
+        function displayInputToIso(displayDate) {
+            const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((displayDate || '').trim());
+            if (!match) return null;
+
+            const day = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10);
+            const year = parseInt(match[3], 10);
+
+            if (month < 1 || month > 12) return null;
+            const daysInMonth = new Date(year, month, 0).getDate();
+            if (day < 1 || day > daysInMonth) return null;
+
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+
+        function formatTimeDisplay(timeStr) {
+            if (!timeStr) return '';
+            let t = timeStr.trim();
+            if (t.length === 3) t = '0' + t;
+            return t;
+        }
+
+        function calculatePrice(kwh) {
+            if (isNaN(kwh) || kwh <= 0) return 0;
+            return Math.round(kwh * FIXED_RATE * 100) / 100;
+        }
+
+        function updatePriceFromKwh() {
+            const kwhVal = parseFloat(inputKwh.value);
+            if (!isNaN(kwhVal) && kwhVal > 0) {
+                const price = calculatePrice(kwhVal);
+                inputPrice.value = price.toFixed(2);
+                calcPreview.textContent = price.toFixed(2) + ' RM';
+            } else {
+                inputPrice.value = '';
+                calcPreview.textContent = '0.00 RM';
+            }
+        }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+        }
+
+        // ---------- MENU ----------
+        function openMenu() {
+            dropdownMenu.classList.add('open');
+            menuBtn.classList.add('open');
+        }
+
+        function closeMenu() {
+            dropdownMenu.classList.remove('open');
+            menuBtn.classList.remove('open');
+        }
+
+        menuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (dropdownMenu.classList.contains('open')) closeMenu();
+            else openMenu();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!dropdownMenu.contains(e.target) && e.target !== menuBtn && !menuBtn.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeMenu();
+        });
+
+        // ---------- TAB SWITCHING ----------
+        function switchTab(tabName) {
+            paneReading.classList.remove('active');
+            paneLog.classList.remove('active');
+            paneChart.classList.remove('active');
+
+            if (tabName === 'reading') {
+                paneReading.classList.add('active');
+            } else if (tabName === 'log') {
+                paneLog.classList.add('active');
+            } else if (tabName === 'chart') {
+                paneChart.classList.add('active');
+                // rebuild both charts with current width
+                const sorted = [...entries].sort((a, b) => {
+                    if (a.date !== b.date) return b.date.localeCompare(a.date);
+                    return a.time.padStart(4, '0').localeCompare(b.time.padStart(4, '0'));
+                });
+                renderChart(sorted);
+                renderPriceChart(sorted);
+            }
+
+            dropdownItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.tab === tabName);
+            });
+
+            closeMenu();
+
+            if (tabName === 'reading' && window.innerWidth >= 640) {
+                setTimeout(() => inputTime.focus(), 100);
+            }
+        }
+
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                switchTab(item.dataset.tab);
+            });
+        });
+
+        // ---------- SHEET SYNC ----------
+        function syncEntryToSheet(entry) {
+            if (!SHEET_WEBHOOK_URL) return;
+
+            fetch(SHEET_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(entry)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showToast('☁️ Synced to Google Sheet');
+                } else {
+                    console.error('Sheet sync error:', data.message);
+                    showToast('⚠️ Sheet sync failed');
+                }
+            })
+            .catch(err => {
+                console.error('Sheet sync request failed:', err);
+                showToast('⚠️ Sheet sync failed');
+            });
+        }
+
+        // ---------- RENDER TABLE ----------
+        function render() {
+            const sorted = [...entries].sort((a, b) => {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                return a.time.padStart(4, '0').localeCompare(b.time.padStart(4, '0'));
+            });
+
+            const totalPriceMap = new Map();
+            sorted.forEach(e => {
+                if (!totalPriceMap.has(e.date)) totalPriceMap.set(e.date, 0);
+                totalPriceMap.set(e.date, totalPriceMap.get(e.date) + e.price);
+            });
+            for (let [date, total] of totalPriceMap.entries()) {
+                totalPriceMap.set(date, Math.round(total * 100) / 100);
+            }
+
+            const lastEntryIndexPerDate = new Map();
+            sorted.forEach((e, idx) => {
+                lastEntryIndexPerDate.set(e.date, idx);
+            });
+
+            if (sorted.length === 0) {
+                tableBody.innerHTML = `<tr class="empty-row"><td colspan="6">✨ No entries yet. Add one via the menu.</td></tr>`;
+                entryCountSpan.textContent = `0 entries`;
+                renderChart(sorted);
+                renderPriceChart(sorted);
+                return;
+            }
+
+            let html = '';
+            let previousDate = '';
+
+            sorted.forEach((entry, idx) => {
+                const displayDate = formatDisplayDate(entry.date);
+                const showDate = entry.date !== previousDate;
+                const timeFormatted = formatTimeDisplay(entry.time);
+                const isLastOfDate = (lastEntryIndexPerDate.get(entry.date) === idx);
+                const totalForDay = isLastOfDate ? totalPriceMap.get(entry.date) : null;
+
+                const rowClass = showDate ? 'date-group' : '';
+
+                html += `<tr class="${rowClass}">`;
+
+                if (showDate) {
+                    html += `<td><strong>${displayDate}</strong></td>`;
+                    previousDate = entry.date;
+                } else {
+                    html += `<td></td>`;
+                }
+
+                html += `<td>${timeFormatted}</td>`;
+                html += `<td>${entry.rate.toFixed(4)}</td>`;
+                html += `<td>${entry.consumption.toFixed(2)}</td>`;
+                html += `<td>${entry.price.toFixed(2)}</td>`;
+
+                if (isLastOfDate) {
+                    html += `<td><strong>${totalForDay.toFixed(2)}</strong></td>`;
+                } else {
+                    html += `<td>—</td>`;
+                }
+
+                html += `</tr>`;
+            });
+
+            tableBody.innerHTML = html;
+            entryCountSpan.textContent = `${sorted.length} ${sorted.length === 1 ? 'entry' : 'entries'}`;
+
+            renderChart(sorted);
+            renderPriceChart(sorted);
+        }
+
+        // ---------- RENDER CONSUMPTION CHART ----------
+        function renderChart(sortedEntries) {
+            const wrap = document.getElementById('chartWrap');
+            if (!wrap) return;
+
+            const totalsByDate = new Map();
+            sortedEntries.forEach(e => {
+                totalsByDate.set(e.date, (totalsByDate.get(e.date) || 0) + e.consumption);
+            });
+            const dates = [...totalsByDate.keys()].sort((a, b) => a.localeCompare(b));
+
+            if (dates.length === 0) {
+                wrap.innerHTML = `<div class="chart-empty">✨ No data yet to chart</div>`;
+                return;
+            }
+
+            const values = dates.map(d => Math.round(totalsByDate.get(d) * 100) / 100);
+            const maxVal = Math.max(...values, 0.01);
+
+            const isNarrow = window.innerWidth < 480;
+            const barWidth = isNarrow ? 34 : 44;
+            const barGap = isNarrow ? 14 : 22;
+            const chartHeight = isNarrow ? 150 : 190;
+            const topPadding = isNarrow ? 22 : 28;
+            const bottomPadding = isNarrow ? 28 : 34;
+            const leftPadding = 12;
+            const svgHeight = chartHeight + topPadding + bottomPadding;
+            const svgWidth = leftPadding * 2 + dates.length * (barWidth + barGap) - barGap;
+
+            let bars = '';
+            dates.forEach((d, i) => {
+                const val = values[i];
+                const barHeight = Math.max((val / maxVal) * chartHeight, 2);
+                const x = leftPadding + i * (barWidth + barGap);
+                const y = topPadding + (chartHeight - barHeight);
+                const label = formatDisplayDate(d);
+
+                bars += `
+                    <rect class="bar-rect" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="6"></rect>
+                    <text class="bar-value" x="${x + barWidth / 2}" y="${y - 8}">${val.toFixed(2)}</text>
+                    <text class="bar-label" x="${x + barWidth / 2}" y="${topPadding + chartHeight + 20}">${label}</text>
+                `;
+            });
+
+            wrap.innerHTML = `
+                <svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}" style="min-width:100%;">
+                    <line x1="${leftPadding}" y1="${topPadding + chartHeight}" x2="${svgWidth - leftPadding}" y2="${topPadding + chartHeight}" stroke="#d4e2ea" stroke-width="1"></line>
+                    ${bars}
+                </svg>
+            `;
+        }
+
+        // ---------- RENDER PRICE CHART (new) ----------
+        function renderPriceChart(sortedEntries) {
+            const wrap = document.getElementById('chartWrapPrice');
+            if (!wrap) return;
+
+            const totalsByDate = new Map();
+            sortedEntries.forEach(e => {
+                totalsByDate.set(e.date, (totalsByDate.get(e.date) || 0) + e.price);
+            });
+            const dates = [...totalsByDate.keys()].sort((a, b) => a.localeCompare(b));
+
+            if (dates.length === 0) {
+                wrap.innerHTML = `<div class="chart-empty">✨ No data yet to chart</div>`;
+                return;
+            }
+
+            const values = dates.map(d => Math.round(totalsByDate.get(d) * 100) / 100);
+            const maxVal = Math.max(...values, 0.01);
+
+            const isNarrow = window.innerWidth < 480;
+            const barWidth = isNarrow ? 34 : 44;
+            const barGap = isNarrow ? 14 : 22;
+            const chartHeight = isNarrow ? 150 : 190;
+            const topPadding = isNarrow ? 22 : 28;
+            const bottomPadding = isNarrow ? 28 : 34;
+            const leftPadding = 12;
+            const svgHeight = chartHeight + topPadding + bottomPadding;
+            const svgWidth = leftPadding * 2 + dates.length * (barWidth + barGap) - barGap;
+
+            let bars = '';
+            dates.forEach((d, i) => {
+                const val = values[i];
+                const barHeight = Math.max((val / maxVal) * chartHeight, 2);
+                const x = leftPadding + i * (barWidth + barGap);
+                const y = topPadding + (chartHeight - barHeight);
+                const label = formatDisplayDate(d);
+
+                bars += `
+                    <rect class="bar-rect-price" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="6"></rect>
+                    <text class="bar-value-price" x="${x + barWidth / 2}" y="${y - 8}">${val.toFixed(2)}</text>
+                    <text class="bar-label-price" x="${x + barWidth / 2}" y="${topPadding + chartHeight + 20}">${label}</text>
+                `;
+            });
+
+            wrap.innerHTML = `
+                <svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}" style="min-width:100%;">
+                    <line x1="${leftPadding}" y1="${topPadding + chartHeight}" x2="${svgWidth - leftPadding}" y2="${topPadding + chartHeight}" stroke="#d4e2ea" stroke-width="1"></line>
+                    ${bars}
+                </svg>
+            `;
+        }
+
+        // ---------- ADD ENTRY ----------
+        function addEntry(date, time, consumption) {
+            let timeStr = time.toString().trim();
+            if (timeStr.length < 3 || timeStr.length > 4 || !/^\d+$/.test(timeStr)) {
+                alert('Please enter a valid time (3 or 4 digits, e.g. 400 or 1630)');
+                return false;
+            }
+            if (timeStr.length === 3) timeStr = '0' + timeStr;
+
+            const kwhVal = parseFloat(consumption);
+            if (isNaN(kwhVal) || kwhVal <= 0) {
+                alert('Consumption must be a positive number');
+                return false;
+            }
+
+            const price = calculatePrice(kwhVal);
+            const rate = FIXED_RATE;
+
+            const newEntry = {
+                date: date,
+                time: timeStr,
+                rate: rate,
+                consumption: kwhVal,
+                price: price,
+            };
+
+            entries.push(newEntry);
+            render();
+
+            syncEntryToSheet(newEntry);
+
+            return true;
+        }
+
+        function handleAddEntry() {
+            const isoDate = displayInputToIso(inputDate.value);
+            const time = inputTime.value.trim();
+            const kwh = inputKwh.value.trim();
+
+            if (!isoDate) {
+                alert('Please enter a valid date as DD/MM/YYYY (e.g. 14/09/2026)');
+                inputDate.focus();
+                return;
+            }
+            if (!time) {
+                alert('Please enter time (e.g. 1430)');
+                inputTime.focus();
+                return;
+            }
+            if (!kwh) {
+                alert('Please fill in consumption');
+                inputKwh.focus();
+                return;
+            }
+
+            const success = addEntry(isoDate, time, kwh);
+            if (success) {
+                inputTime.value = '';
+                inputKwh.value = '';
+                inputPrice.value = '';
+                calcPreview.textContent = '0.00 RM';
+                inputTime.focus();
+                showToast('✅ Entry added');
+            }
+        }
+
+        addEntryBtn.addEventListener('click', handleAddEntry);
+
+        inputTime.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddEntry();
+            }
+        });
+        inputKwh.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddEntry();
+            }
+        });
+
+        inputKwh.addEventListener('input', updatePriceFromKwh);
+
+        clearAllBtn.addEventListener('click', function() {
+            if (entries.length === 0) return;
+            if (confirm('Delete all consumption entries?')) {
+                entries = [];
+                render();
+                showToast('🗑️ All entries cleared');
+            }
+        });
+
+        // ---------- INIT DATE ----------
+        function initDate() {
+            const today = getTodayISO();
+            inputDate.value = isoToDisplayInput(today);
+            todayDisplay.textContent = formatDisplayDate(today);
+        }
+
+        // ---------- LOAD FROM SHEET (unchanged) ----------
+        function loadEntriesFromSheet() {
+            if (!SHEET_WEBHOOK_URL) return;
+
+            tableBody.innerHTML = `<tr class="empty-row"><td colspan="6">⏳ Loading previous readings…</td></tr>`;
+
+            fetch(SHEET_WEBHOOK_URL)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && Array.isArray(data.entries)) {
+                        entries = data.entries.map(e => ({
+                            date: e.date,
+                            time: String(e.time).padStart(4, '0'),
+                            rate: Number(e.rate),
+                            consumption: Number(e.consumption),
+                            price: Number(e.price)
+                        }));
+                        render();
+                        showToast(`☁️ Loaded ${entries.length} reading${entries.length === 1 ? '' : 's'}`);
+                    } else {
+                        console.error('Load error:', data.message);
+                        render();
+                        showToast('⚠️ Could not load sheet data');
+                    }
+                })
+                .catch(err => {
+                    console.error('Load request failed:', err);
+                    render();
+                    showToast('⚠️ Could not load sheet data');
+                });
+        }
+
+        // ---------- BOOTSTRAP ----------
+        function init() {
+            initDate();
+            updatePriceFromKwh();
+            loadEntriesFromSheet();
+            if (window.innerWidth >= 640) {
+                inputTime.focus();
+            }
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
